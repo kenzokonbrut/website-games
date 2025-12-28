@@ -15,21 +15,17 @@
     margin:0;
     color:#fff;
   }
-
   .container {
     text-align: center;
   }
-
   h1 {
     margin-bottom: 20px;
     font-size: 2.5rem;
     text-shadow: 0 0 10px #ff0077, 0 0 20px #00ffff;
   }
-
   .mode-select, .reset-btn {
     margin: 10px 0;
   }
-
   button {
     padding: 12px 24px;
     margin: 5px;
@@ -42,12 +38,10 @@
     box-shadow: 0 0 5px #ff0077, 0 0 10px #00ffff;
     transition: all 0.2s;
   }
-
   button:hover {
     transform: scale(1.1);
     box-shadow: 0 0 15px #ff0077, 0 0 25px #00ffff;
   }
-
   .board {
     display: grid;
     grid-template-columns: repeat(3, 100px);
@@ -55,7 +49,6 @@
     justify-content: center;
     margin: 20px auto;
   }
-
   .cell {
     width: 100px;
     height: 100px;
@@ -67,33 +60,20 @@
     cursor: pointer;
     border: 2px solid #444;
     transition: all 0.3s;
-    position: relative;
   }
-
-  .cell:hover {
-    background: #222;
-    box-shadow: 0 0 15px #ff0077, 0 0 25px #00ffff;
-  }
-
-  .cell.winner {
-    background: #222;
-    box-shadow: 0 0 25px #ff0077, 0 0 40px #00ffff;
-    color: #ff0;
-  }
-
-  .status {
-    margin-top: 15px;
-    font-size: 1.3rem;
-    text-shadow: 0 0 5px #ff0077, 0 0 10px #00ffff;
-  }
+  .cell:hover { background: #222; box-shadow: 0 0 15px #ff0077, 0 0 25px #00ffff; }
+  .cell.winner { background:#222; box-shadow:0 0 25px #ff0077,0 0 40px #00ffff; color:#ff0; }
+  .status { margin-top:15px; font-size:1.3rem; text-shadow:0 0 5px #ff0077,0 0 10px #00ffff; }
 </style>
 </head>
 <body>
 <div class="container">
   <h1>Tic-Tac-Toe</h1>
-  <div class="mode-select">
+  <div class="mode-select" id="modeSelect">
     <button id="twoPlayerBtn">2 Player</button>
-    <button id="aiPlayerBtn">Play vs AI</button>
+    <button id="aiEasyBtn">AI Easy</button>
+    <button id="aiMediumBtn">AI Medium</button>
+    <button id="aiHardBtn">AI Hard</button>
   </div>
   <div class="board" id="board" style="display:none;"></div>
   <div class="status" id="status"></div>
@@ -107,25 +87,25 @@ const boardEl = document.getElementById('board');
 const statusEl = document.getElementById('status');
 const resetBtn = document.getElementById('resetBtn');
 const twoPlayerBtn = document.getElementById('twoPlayerBtn');
-const aiPlayerBtn = document.getElementById('aiPlayerBtn');
+const aiEasyBtn = document.getElementById('aiEasyBtn');
+const aiMediumBtn = document.getElementById('aiMediumBtn');
+const aiHardBtn = document.getElementById('aiHardBtn');
 
 let board = ["","","","","","","","",""];
 let currentPlayer = "X";
 let gameOver = false;
 let vsAI = false;
+let aiDifficulty = 'hard';
 
 // Winning combinations
-const winCombos = [
-  [0,1,2],[3,4,5],[6,7,8],
-  [0,3,6],[1,4,7],[2,5,8],
-  [0,4,8],[2,4,6]
-];
+const winCombos = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 
-function startGame(ai=false){
+function startGame(ai=false,difficulty='hard'){
   board = ["","","","","","","","",""];
   currentPlayer = "X";
   gameOver = false;
   vsAI = ai;
+  aiDifficulty = difficulty;
   boardEl.style.display = "grid";
   resetBtn.style.display = "inline-block";
   boardEl.innerHTML = '';
@@ -181,20 +161,19 @@ function highlightWinner(player){
   });
 }
 
+// AI Move with difficulty
 function aiMove(){
-  let bestScore = -Infinity;
   let move;
-  for(let i=0;i<9;i++){
-    if(board[i]===""){
-      board[i] = "O";
-      let score = minimax(board, 0, false);
-      board[i] = "";
-      if(score > bestScore){
-        bestScore = score;
-        move = i;
-      }
-    }
+  const emptyCells = board.map((v,i)=>v===""?i:null).filter(v=>v!==null);
+
+  if(aiDifficulty === 'easy'){
+    move = emptyCells[Math.floor(Math.random()*emptyCells.length)];
+  } else if(aiDifficulty === 'medium'){
+    move = getBestMove(board,2);
+  } else {
+    move = getBestMove(board,9);
   }
+
   board[move] = "O";
   boardEl.children[move].textContent = "O";
 
@@ -213,40 +192,57 @@ function aiMove(){
   statusEl.textContent = `Current Turn: ${currentPlayer}`;
 }
 
-// Minimax algorithm for AI
-function minimax(newBoard, depth, isMaximizing){
-  if(checkWin("O")) return 10 - depth;
-  if(checkWin("X")) return depth - 10;
-  if(newBoard.every(cell => cell !== "")) return 0;
+// Minimax with depth limit
+function getBestMove(boardState,maxDepth){
+  let bestScore=-Infinity, move;
+  for(let i=0;i<9;i++){
+    if(boardState[i]===""){
+      boardState[i]="O";
+      let score=minimax(boardState,0,false,maxDepth);
+      boardState[i]="";
+      if(score>bestScore){ bestScore=score; move=i; }
+    }
+  }
+  return move;
+}
+
+function minimax(newBoard,depth,isMaximizing,maxDepth){
+  if(checkWin("O")) return 10-depth;
+  if(checkWin("X")) return depth-10;
+  if(newBoard.every(cell=>cell!=="")) return 0;
+  if(depth>=maxDepth) return 0;
 
   if(isMaximizing){
-    let bestScore = -Infinity;
+    let bestScore=-Infinity;
     for(let i=0;i<9;i++){
       if(newBoard[i]===""){
-        newBoard[i] = "O";
-        let score = minimax(newBoard, depth+1, false);
-        newBoard[i] = "";
-        bestScore = Math.max(score, bestScore);
+        newBoard[i]="O";
+        let score=minimax(newBoard,depth+1,false,maxDepth);
+        newBoard[i]="";
+        bestScore=Math.max(score,bestScore);
       }
     }
     return bestScore;
   } else {
-    let bestScore = Infinity;
+    let bestScore=Infinity;
     for(let i=0;i<9;i++){
       if(newBoard[i]===""){
-        newBoard[i] = "X";
-        let score = minimax(newBoard, depth+1, true);
-        newBoard[i] = "";
-        bestScore = Math.min(score, bestScore);
+        newBoard[i]="X";
+        let score=minimax(newBoard,depth+1,true,maxDepth);
+        newBoard[i]="";
+        bestScore=Math.min(score,bestScore);
       }
     }
     return bestScore;
   }
 }
 
+// Event listeners
 twoPlayerBtn.addEventListener('click', ()=>startGame(false));
-aiPlayerBtn.addEventListener('click', ()=>startGame(true));
-resetBtn.addEventListener('click', ()=>startGame(vsAI));
+aiEasyBtn.addEventListener('click', ()=>startGame(true,'easy'));
+aiMediumBtn.addEventListener('click', ()=>startGame(true,'medium'));
+aiHardBtn.addEventListener('click', ()=>startGame(true,'hard'));
+resetBtn.addEventListener('click', ()=>startGame(vsAI, aiDifficulty));
 </script>
 </body>
 </html>
