@@ -7,73 +7,84 @@
 <style>
   body {
     font-family: 'Segoe UI', sans-serif;
-    background: #f4f4f4;
+    background: linear-gradient(135deg, #1a1a1a, #333);
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
     margin:0;
+    color:#fff;
   }
+
   .container {
     text-align: center;
   }
+
   h1 {
     margin-bottom: 20px;
+    font-size: 2.5rem;
+    text-shadow: 0 0 10px #ff0077, 0 0 20px #00ffff;
   }
-  .mode-select {
-    margin-bottom: 20px;
+
+  .mode-select, .reset-btn {
+    margin: 10px 0;
   }
+
   button {
-    padding: 10px 20px;
+    padding: 12px 24px;
     margin: 5px;
     font-size: 1rem;
     cursor: pointer;
-    border-radius: 6px;
-    border: 1px solid #333;
-    background: #fff;
+    border-radius: 8px;
+    border: none;
+    background: #222;
+    color: #fff;
+    box-shadow: 0 0 5px #ff0077, 0 0 10px #00ffff;
     transition: all 0.2s;
   }
+
   button:hover {
-    background: #ddd;
+    transform: scale(1.1);
+    box-shadow: 0 0 15px #ff0077, 0 0 25px #00ffff;
   }
+
   .board {
     display: grid;
     grid-template-columns: repeat(3, 100px);
-    grid-gap: 5px;
+    grid-gap: 10px;
     justify-content: center;
     margin: 20px auto;
   }
+
   .cell {
     width: 100px;
     height: 100px;
-    background: #fff;
+    background: #111;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 2rem;
+    font-size: 2.5rem;
     cursor: pointer;
-    border: 2px solid #333;
-    transition: background 0.2s;
+    border: 2px solid #444;
+    transition: all 0.3s;
+    position: relative;
   }
+
   .cell:hover {
-    background: #f0f0f0;
+    background: #222;
+    box-shadow: 0 0 15px #ff0077, 0 0 25px #00ffff;
   }
+
+  .cell.winner {
+    background: #222;
+    box-shadow: 0 0 25px #ff0077, 0 0 40px #00ffff;
+    color: #ff0;
+  }
+
   .status {
     margin-top: 15px;
-    font-size: 1.2rem;
-  }
-  .reset-btn {
-    margin-top: 15px;
-    padding: 8px 16px;
-    font-size: 1rem;
-    cursor: pointer;
-    border-radius: 6px;
-    border: 1px solid #333;
-    background: #fff;
-    transition: all 0.2s;
-  }
-  .reset-btn:hover {
-    background: #ddd;
+    font-size: 1.3rem;
+    text-shadow: 0 0 5px #ff0077, 0 0 10px #00ffff;
   }
 </style>
 </head>
@@ -86,7 +97,9 @@
   </div>
   <div class="board" id="board" style="display:none;"></div>
   <div class="status" id="status"></div>
-  <button class="reset-btn" id="resetBtn" style="display:none;">Restart Game</button>
+  <div class="mode-select">
+    <button class="reset-btn" id="resetBtn" style="display:none;">Restart Game</button>
+  </div>
 </div>
 
 <script>
@@ -134,6 +147,7 @@ function handleClick(e){
   e.target.textContent = currentPlayer;
 
   if(checkWin(currentPlayer)){
+    highlightWinner(currentPlayer);
     statusEl.textContent = `${currentPlayer} Wins!`;
     gameOver = true;
     return;
@@ -148,7 +162,7 @@ function handleClick(e){
   if(vsAI && currentPlayer === "X"){
     currentPlayer = "O";
     statusEl.textContent = `Current Turn: ${currentPlayer}`;
-    aiMove();
+    setTimeout(aiMove, 400);
   } else {
     currentPlayer = currentPlayer === "X" ? "O" : "X";
     statusEl.textContent = `Current Turn: ${currentPlayer}`;
@@ -157,6 +171,14 @@ function handleClick(e){
 
 function checkWin(player){
   return winCombos.some(combo => combo.every(i => board[i]===player));
+}
+
+function highlightWinner(player){
+  winCombos.forEach(combo=>{
+    if(combo.every(i=>board[i]===player)){
+      combo.forEach(i=>boardEl.children[i].classList.add('winner'));
+    }
+  });
 }
 
 function aiMove(){
@@ -177,6 +199,7 @@ function aiMove(){
   boardEl.children[move].textContent = "O";
 
   if(checkWin("O")){
+    highlightWinner("O");
     statusEl.textContent = "O Wins!";
     gameOver = true;
     return;
