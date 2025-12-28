@@ -232,36 +232,67 @@ ticRestart.onclick = ()=> startTic();
 /* =======================
       DINO JUMP
 ======================= */
-const dinoCanvas=document.getElementById('dinoCanvas');
-const dCtx=dinoCanvas.getContext('2d');
-let dinoInterval,dino,obstacles,dinoScore,gravity=0.6,speed=4;
+// ===== Dino Jump =====
+const dinoCanvas = document.getElementById('dinoCanvas'); 
+const dCtx = dinoCanvas.getContext('2d');
+let dinoInterval;
+let dino = {x:50,y:150,w:40,h:40,vy:0,jump:false};
+let obstacles = []; 
+let dinoScore = 0; 
+let gravity = 0.6; 
+let speed = 4;
+
+// key listener di luar startDino
+document.addEventListener('keydown', (e)=>{
+  if(e.code==='Space' && !dino.jump){
+    dino.vy = -12;
+    dino.jump = true;
+  }
+});
 
 function startDino(){
-  dino={x:50,y:150,w:40,h:40,vy:0,jump:false};
-  obstacles=[]; dinoScore=0;
+  dino={x:50,y:150,w:40,h:40,vy:0,jump:false}; 
+  obstacles=[]; 
+  dinoScore=0;
   document.getElementById('dinoStatus').textContent=`Score: ${dinoScore}`;
-  clearInterval(dinoInterval);
+  clearInterval(dinoInterval); 
   dinoInterval=setInterval(updateDino,20);
 }
-function dinoJumpHandler(e){
-  if(e.code==='Space' && !dino.jump){ dino.vy=-12; dino.jump=true; }
-}
+
 function updateDino(){
-  dino.y+=dino.vy; dino.vy+=gravity;
-  if(dino.y>150){ dino.y=150; dino.vy=0; dino.jump=false; }
-  if(obstacles.length===0||obstacles[obstacles.length-1].x<400){ obstacles.push({x:600,y:150,w:20,h:40}); }
-  obstacles.forEach(o=>o.x-=speed);
-  if(obstacles[0].x+obstacles[0].w<0) obstacles.shift();
+  dino.y += dino.vy; 
+  dino.vy += gravity;
+  if(dino.y > 150){ 
+    dino.y = 150; 
+    dino.vy = 0; 
+    dino.jump = false; 
+  }
+
+  if(obstacles.length===0 || obstacles[obstacles.length-1].x<400){ 
+    obstacles.push({x:600,y:150,w:20,h:40}); 
+  }
+  obstacles.forEach(o=>o.x -= speed);
+  if(obstacles[0].x + obstacles[0].w <0) obstacles.shift();
+
   obstacles.forEach(o=>{
-    if(dino.x<o.x+o.w&&dino.x+dino.w>o.x&&dino.y<o.y+o.h&&dino.y+dino.h>o.h){ alert('Game Over! Score:'+dinoScore); clearInterval(dinoInterval);}
+    if(dino.x<o.x+o.w && dino.x+dino.w>o.x && dino.y<o.y+o.h && dino.y+dino.h>o.y){
+      alert('Game Over! Score: '+dinoScore);
+      clearInterval(dinoInterval);
+    }
   });
-  dinoScore++; document.getElementById('dinoStatus').textContent=`Score: ${dinoScore}`;
+
+  dinoScore++; 
+  document.getElementById('dinoStatus').textContent=`Score: ${dinoScore}`;
+  drawDino();
+}
+
+function drawDino(){
   dCtx.clearRect(0,0,dinoCanvas.width,dinoCanvas.height);
   dCtx.fillStyle='green'; dCtx.fillRect(dino.x,dino.y,dino.w,dino.h);
   dCtx.fillStyle='red'; obstacles.forEach(o=>dCtx.fillRect(o.x,o.y,o.w,o.h));
 }
-document.addEventListener('keydown',dinoJumpHandler);
-document.getElementById('restartDino').onclick=startDino();
+
+document.getElementById('restartDino').onclick=startDino;
 
 /* =======================
       CHESS vs AI
