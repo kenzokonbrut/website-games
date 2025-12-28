@@ -57,20 +57,14 @@ input[type=number]{ padding:8px; border-radius:6px; border:none; width:100px; fo
   <button id="backDino">Back to Menu</button>
 </div>
 
-<!-- Chess Mode -->
-<div class="container hidden" id="chessMode">
-  <h1>Chess Mode</h1>
-  <button id="chessPlayerBtn">2 Player</button>
-  <button id="chessAIBtn">vs AI</button>
-  <button id="backChessMode">Back</button>
-</div>
-
-<!-- Chess Game -->
+<!-- Chess -->
 <div class="container hidden" id="chessGame">
   <h1>Chess</h1>
   <canvas id="chessCanvas" width="400" height="400"></canvas>
   <div class="status" id="chessStatus">Turn: White</div>
-  <button id="backToMain2">Back to Menu</button>
+  <button id="mode2Player">2 Player</button>
+  <button id="modeAI">Play vs AI</button>
+  <button id="backChess">Back to Menu</button>
 </div>
 
 <!-- Math Level Selection -->
@@ -137,13 +131,15 @@ document.getElementById('backDino').onclick = ()=>{
   mainMenu.classList.remove('hidden');
   clearInterval(dinoInterval);
 };
-document.getElementById('backChessMode').onclick = ()=>{
-  chessMode.classList.add('hidden');
-  mainMenu.classList.remove('hidden');
+document.getElementById('mode2Player').onclick = ()=>{
+vsAI=false; initChess();
 };
-document.getElementById('backToMain2').onclick = ()=>{
-  chessGame.classList.add('hidden');
-  mainMenu.classList.remove('hidden');
+document.getElementById('modeAI').onclick = ()=>{
+vsAI=true; initChess();
+};
+document.getElementById('backChess').onclick = ()=>{
+document.getElementById('chessGame').classList.add('hidden');
+document.getElementById('mainMenu').classList.remove('hidden');
 };
 document.getElementById('backMath').onclick = ()=>{
   mathGame.classList.add('hidden');
@@ -232,7 +228,7 @@ ticRestart.onclick = ()=> startTic();
 /* =======================
       DINO JUMP
 ======================= */
-// ===== Dino Jump =====
+// ===== Dino Jump (HP Friendly) =====
 const dinoCanvas = document.getElementById('dinoCanvas'); 
 const dCtx = dinoCanvas.getContext('2d');
 let dinoInterval;
@@ -242,7 +238,15 @@ let dinoScore = 0;
 let gravity = 0.6; 
 let speed = 4;
 
-// key listener di luar startDino
+// Tap/click untuk lompat
+dinoCanvas.addEventListener('click', () => {
+  if(!dino.jump){
+    dino.vy = -12;
+    dino.jump = true;
+  }
+});
+
+// Opsional: key listener tetap bisa
 document.addEventListener('keydown', (e)=>{
   if(e.code==='Space' && !dino.jump){
     dino.vy = -12;
@@ -297,70 +301,120 @@ document.getElementById('restartDino').onclick=startDino;
 /* =======================
       CHESS vs AI
 ======================= */
-const chessCanvasEl=document.getElementById('chessCanvas');
-const cCtx2=chessCanvasEl.getContext('2d');
-const chessStatusEl=document.getElementById('chessStatus');
-const size=50;
-let chessBoard=[],selectedChess=null,turnChess='white';
+const chessCanvasEl = document.getElementById('chessCanvas');
+const cCtx = chessCanvasEl.getContext('2d');
+const chessStatusEl = document.getElementById('chessStatus');
+const size = 50;
+
+let chessBoard = [];
+let selectedChess = null;
+let turnChess = 'white';
+let vsAI = false;
+
+const pieceSymbols = { 'P':'♙','R':'♖','N':'♘','B':'♗','Q':'♕','K':'♔' };
 
 function initChess(){
-  chessBoard=Array(8).fill(null).map(()=>Array(8).fill(null));
+  chessBoard = Array(8).fill(null).map(()=>Array(8).fill(null));
   for(let i=0;i<8;i++){ chessBoard[1][i]='bP'; chessBoard[6][i]='wP'; }
   chessBoard[0][0]=chessBoard[0][7]='bR'; chessBoard[7][0]=chessBoard[7][7]='wR';
   chessBoard[0][1]=chessBoard[0][6]='bN'; chessBoard[7][1]=chessBoard[7][6]='wN';
   chessBoard[0][2]=chessBoard[0][5]='bB'; chessBoard[7][2]=chessBoard[7][5]='wB';
   chessBoard[0][3]='bQ'; chessBoard[7][3]='wQ';
   chessBoard[0][4]='bK'; chessBoard[7][4]='wK';
-  turnChess='white'; selectedChess=null;
-  chessStatusEl.textContent='Turn: White';
+  turnChess='white';
+  selectedChess=null;
   drawChess();
 }
 
 function drawChess(){
-  cCtx2.clearRect(0,0,chessCanvasEl.width,chessCanvasEl.height);
+  cCtx.clearRect(0,0,chessCanvasEl.width,chessCanvasEl.height);
   for(let y=0;y<8;y++){
     for(let x=0;x<8;x++){
-      cCtx2.fillStyle=(x+y)%2===0?'#eee':'#555';
-      cCtx2.fillRect(x*size,y*size,size,size);
+      cCtx.fillStyle=(x+y)%2===0?'#eee':'#555';
+      cCtx.fillRect(x*size,y*size,size,size);
+
+      if(selectedChess && selectedChess.x===x && selectedChess.y===y){
+        cCtx.fillStyle='rgba(0,255,0,0.4)';
+        cCtx.fillRect(x*size,y*size,size,size);
+      }
+
       if(chessBoard[y][x]){
-        cCtx2.fillStyle=chessBoard[y][x][0]==='w'?'white':'black';
-        cCtx2.font='30px Arial'; cCtx2.textAlign='center'; cCtx2.textBaseline='middle';
-        cCtx2.fillText(chessBoard[y][x][1],x*size+size/2,y*size+size/2);
+        cCtx.fillStyle=chessBoard[y][x][0]==='w'?'white':'black';
+        cCtx.font='30px Arial';
+        cCtx.textAlign='center';
+        cCtx.textBaseline='middle';
+        cCtx.fillText(pieceSymbols[chessBoard[y][x][1]], x*size+size/2, y*size+size/2);
       }
     }
   }
-  chessStatusEl.textContent=`Turn: ${turnChess.charAt(0).toUpperCase()+turnChess.slice(1)}`;
+  chessStatusEl.textContent = `Turn: ${turnChess.charAt(0).toUpperCase()+turnChess.slice(1)}`;
 }
 
-function inBoard(x,y){ return x>=0&&x<8&&y>=0&&y<8; }
+function inBoard(x,y){ return x>=0 && x<8 && y>=0 && y<8; }
 
+// Returns array of moves {x,y} for a piece at x,y
 function getChessMoves(x,y){
-  const piece=chessBoard[y][x];
+  const piece = chessBoard[y][x];
   if(!piece) return [];
-  const color=piece[0], type=piece[1];
-  let moves=[];
+  const color = piece[0], type = piece[1];
+  const moves=[];
+
   if(type==='P'){
     const dir=color==='w'?-1:1;
-    if(inBoard(x,y+dir)&&!chessBoard[y+dir][x]) moves.push({x,y:y+dir});
-    if(inBoard(x-1,y+dir)&&chessBoard[y+dir][x-1]&&chessBoard[y+dir][x-1][0]!==color) moves.push({x:x-1,y:y+dir});
-    if(inBoard(x+1,y+dir)&&chessBoard[y+dir][x+1]&&chessBoard[y+dir][x+1][0]!==color) moves.push({x:x+1,y:y+dir});
+    if(inBoard(x,y+dir) && !chessBoard[y+dir][x]) moves.push({x,y:y+dir});
+    if((y===1 && color==='b') || (y===6 && color==='w')){
+      if(inBoard(x,y+2*dir) && !chessBoard[y+dir][x] && !chessBoard[y+2*dir][x]) moves.push({x,y:y+2*dir});
+    }
+    [[-1,dir],[1,dir]].forEach(d=>{
+      const nx=x+d[0], ny=y+d[1];
+      if(inBoard(nx,ny) && chessBoard[ny][nx] && chessBoard[ny][nx][0]!==color) moves.push({x:nx,y:ny});
+    });
   }
+
+  if(type==='R' || type==='Q'){
+    [[1,0],[-1,0],[0,1],[0,-1]].forEach(d=>{
+      let nx=x+d[0], ny=y+d[1];
+      while(inBoard(nx,ny)){
+        if(!chessBoard[ny][nx]) moves.push({x:nx,y:ny});
+        else{ if(chessBoard[ny][nx][0]!==color) moves.push({x:nx,y:ny}); break; }
+        nx+=d[0]; ny+=d[1];
+      }
+    });
+  }
+
+  if(type==='B' || type==='Q'){
+    [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(d=>{
+      let nx=x+d[0], ny=y+d[1];
+      while(inBoard(nx,ny)){
+        if(!chessBoard[ny][nx]) moves.push({x:nx,y:ny});
+        else{ if(chessBoard[ny][nx][0]!==color) moves.push({x:nx,y:ny}); break; }
+        nx+=d[0]; ny+=d[1];
+      }
+    });
+  }
+
   if(type==='N'){
     [[2,1],[1,2],[-1,2],[-2,1],[-2,-1],[-1,-2],[1,-2],[2,-1]].forEach(d=>{
-      const nx=x+d[0], ny=y+d[1]; if(inBoard(nx,ny)&&(!chessBoard[ny][nx]||chessBoard[ny][nx][0]!==color)) moves.push({x:nx,y:ny});
+      const nx=x+d[0], ny=y+d[1]; if(inBoard(nx,ny) && (!chessBoard[ny][nx] || chessBoard[ny][nx][0]!==color)) moves.push({x:nx,y:ny});
+    });
+  }
+
+  if(type==='K'){
+    [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]].forEach(d=>{
+      const nx=x+d[0], ny=y+d[1]; if(inBoard(nx,ny) && (!chessBoard[ny][nx] || chessBoard[ny][nx][0]!==color)) moves.push({x:nx,y:ny});
     });
   }
 
   return moves;
 }
 
-function aiChess(){
+function aiChessMove(){
   const allMoves=[];
   for(let y=0;y<8;y++){
     for(let x=0;x<8;x++){
-      if(chessBoard[y][x]&& chessBoard[y][x][0]==='b'){
-        const mv=getChessMoves(x,y);
-        mv.forEach(m=>allMoves.push({from:{x,y},to:m}));
+      if(chessBoard[y][x] && chessBoard[y][x][0]==='b'){
+        const moves=getChessMoves(x,y);
+        moves.forEach(m=>allMoves.push({from:{x,y},to:m}));
       }
     }
   }
@@ -373,19 +427,37 @@ function aiChess(){
 }
 
 chessCanvasEl.addEventListener('click',e=>{
-  if(turnChess!=='white') return; 
   const x=Math.floor(e.offsetX/size), y=Math.floor(e.offsetY/size);
+  const piece=chessBoard[y][x];
+
+  if(vsAI && turnChess!=='white') return; // AI turn
   if(selectedChess){
-    chessBoard[y][x]=chessBoard[selectedChess.y][selectedChess.x];
-    chessBoard[selectedChess.y][selectedChess.x]=null;
-    selectedChess=null;
-    turnChess='black';
-    drawChess();
-    setTimeout(aiChess,400);
-  } else if(chessBoard[y][x] && chessBoard[y][x][0]==='w'){
+    const legalMoves=getChessMoves(selectedChess.x,selectedChess.y);
+    if(legalMoves.some(m=>m.x===x && m.y===y)){
+      chessBoard[y][x]=chessBoard[selectedChess.y][selectedChess.x];
+      chessBoard[selectedChess.y][selectedChess.x]=null;
+      selectedChess=null;
+      turnChess=turnChess==='white'?'black':'white';
+      drawChess();
+      if(vsAI && turnChess==='black') setTimeout(aiChessMove,400);
+    } else { selectedChess=null; drawChess(); }
+  } else if(piece && piece[0]===turnChess[0]){
     selectedChess={x,y};
+    drawChess();
   }
 });
+
+// Buttons
+document.getElementById('mode2Player').onclick = ()=>{
+  vsAI=false; initChess();
+};
+document.getElementById('modeAI').onclick = ()=>{
+  vsAI=true; initChess();
+};
+document.getElementById('backChess').onclick = ()=>{
+  document.getElementById('chessGame').classList.add('hidden');
+  document.getElementById('mainMenu').classList.remove('hidden');
+};
 
 /* =======================
       MATH GAME LEVEL
