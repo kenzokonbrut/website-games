@@ -57,13 +57,11 @@ input[type=number]{ padding:8px; border-radius:6px; border:none; width:100px; fo
   <button id="backDino">Back to Menu</button>
 </div>
 
-<!-- Chess -->
+<!-- Chess Game -->
 <div class="container hidden" id="chessGame">
-  <h1>Chess</h1>
+  <h1>Chess Game</h1>
   <canvas id="chessCanvas" width="400" height="400"></canvas>
   <div class="status" id="chessStatus">Turn: White</div>
-  <button id="mode2Player">2 Player</button>
-  <button id="modeAI">Play vs AI</button>
   <button id="backChess">Back to Menu</button>
 </div>
 
@@ -110,7 +108,7 @@ document.getElementById('playDino').onclick = ()=>{
 };
 document.getElementById('playChess').onclick = ()=>{
   mainMenu.classList.add('hidden');
-  chessMode.classList.remove('hidden');
+  chessMode.classList.remove('hidden'); // tampilkan menu mode dulu
 };
 document.getElementById('playMath').onclick = ()=>{
   mainMenu.classList.add('hidden');
@@ -132,15 +130,27 @@ document.getElementById('backDino').onclick = ()=>{
   clearInterval(dinoInterval);
 };
 document.getElementById('mode2Player').onclick = ()=>{
-vsAI=false; initChess();
+  vsAI=false; 
+  chessMode.classList.add('hidden'); // sembunyikan menu mode
+  chessGame.classList.remove('hidden'); // tampilkan game
+  initChess();
 };
 document.getElementById('modeAI').onclick = ()=>{
-vsAI=true; initChess();
+  vsAI=true;
+  chessMode.classList.add('hidden'); // sembunyikan menu mode
+  chessGame.classList.remove('hidden'); // tampilkan game
+  initChess();
 };
 document.getElementById('backChess').onclick = ()=>{
+  chessGame.classList.add('hidden');
+  mainMenu.classList.remove('hidden');
+};
+document.getElementById('backChessMode').onclick = ()=>{
+  chessMode.classList.add('hidden');
+  mainMenu.classList.remove('hidden');
+};
 document.getElementById('chessGame').classList.add('hidden');
 document.getElementById('mainMenu').classList.remove('hidden');
-};
 document.getElementById('backMath').onclick = ()=>{
   mathGame.classList.add('hidden');
   mainMenu.classList.remove('hidden');
@@ -446,18 +456,6 @@ chessCanvasEl.addEventListener('click',e=>{
     drawChess();
   }
 });
-
-// Buttons
-document.getElementById('mode2Player').onclick = ()=>{
-  vsAI=false; initChess();
-};
-document.getElementById('modeAI').onclick = ()=>{
-  vsAI=true; initChess();
-};
-document.getElementById('backChess').onclick = ()=>{
-  document.getElementById('chessGame').classList.add('hidden');
-  document.getElementById('mainMenu').classList.remove('hidden');
-};
 
 /* =======================
       MATH GAME LEVEL
