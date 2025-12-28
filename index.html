@@ -14,18 +14,23 @@
     min-height: 100vh;
     margin:0;
     color:#fff;
+    overflow: hidden;
   }
-  .container {
-    text-align: center;
-  }
+  canvas { position: absolute; top:0; left:0; pointer-events:none; }
+  .container { text-align: center; z-index:1; position:relative; }
   h1 {
     margin-bottom: 20px;
     font-size: 2.5rem;
     text-shadow: 0 0 10px #ff0077, 0 0 20px #00ffff;
   }
-  .mode-select, .reset-btn {
-    margin: 10px 0;
+  .scoreboard {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
   }
+  .mode-select, .reset-btn { margin: 10px 0; }
   button {
     padding: 12px 24px;
     margin: 5px;
@@ -60,15 +65,26 @@
     cursor: pointer;
     border: 2px solid #444;
     transition: all 0.3s;
+    position: relative;
   }
   .cell:hover { background: #222; box-shadow: 0 0 15px #ff0077, 0 0 25px #00ffff; }
-  .cell.winner { background:#222; box-shadow:0 0 25px #ff0077,0 0 40px #00ffff; color:#ff0; }
+  .cell.winner { animation: glow 1s infinite alternate; color: #ff0; }
+  @keyframes glow {
+    0% { box-shadow: 0 0 20px #ff0077, 0 0 40px #00ffff; }
+    100% { box-shadow: 0 0 40px #ff0077, 0 0 60px #00ffff; }
+  }
   .status { margin-top:15px; font-size:1.3rem; text-shadow:0 0 5px #ff0077,0 0 10px #00ffff; }
 </style>
 </head>
 <body>
+<canvas id="confettiCanvas"></canvas>
 <div class="container">
   <h1>Tic-Tac-Toe</h1>
+  <div class="scoreboard" id="scoreboard">
+    <div id="scoreX">X: 0</div>
+    <div id="scoreO">O: 0</div>
+    <div id="scoreDraw">Draw: 0</div>
+  </div>
   <div class="mode-select" id="modeSelect">
     <button id="twoPlayerBtn">2 Player</button>
     <button id="aiEasyBtn">AI Easy</button>
@@ -83,6 +99,53 @@
 </div>
 
 <script>
+// Canvas confetti
+const canvas = document.getElementById('confettiCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+let confettiParticles = [];
+
+function createConfetti() {
+  for(let i=0;i<150;i++){
+    confettiParticles.push({
+      x: Math.random()*canvas.width,
+      y: Math.random()*canvas.height- canvas.height,
+      r: Math.random()*6+2,
+      d: Math.random()*20+10,
+      color: `hsl(${Math.random()*360}, 100%, 50%)`,
+      tilt: Math.random()*10-10
+    });
+  }
+}
+
+function drawConfetti() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  confettiParticles.forEach(p=>{
+    ctx.beginPath();
+    ctx.lineWidth = p.r;
+    ctx.strokeStyle = p.color;
+    ctx.moveTo(p.x + p.tilt + p.r/2, p.y);
+    ctx.lineTo(p.x + p.tilt, p.y + p.d);
+    ctx.stroke();
+  });
+  updateConfetti();
+}
+
+function updateConfetti() {
+  confettiParticles.forEach(p=>{
+    p.y += Math.cos(p.d)*0.5 + 1;
+    p.tilt += Math.sin(p.d) *0.5;
+    if(p.y>canvas.height){ p.y=-10; p.x=Math.random()*canvas.width; }
+  });
+  if(!gameOver) confettiParticles=[];
+  requestAnimationFrame(drawConfetti);
+}
+
+// Sounds
+const clickSound = new Audio('https://freesound.org/data/previews/256/256113_3263906-lq.mp3');
+const winSound = new Audio('https://freesound.org/data/previews/186/186942_285997-lq.mp3');
+
 const boardEl = document.getElementById('board');
 const statusEl = document.getElementById('status');
 const resetBtn = document.getElementById('resetBtn');
@@ -90,6 +153,9 @@ const twoPlayerBtn = document.getElementById('twoPlayerBtn');
 const aiEasyBtn = document.getElementById('aiEasyBtn');
 const aiMediumBtn = document.getElementById('aiMediumBtn');
 const aiHardBtn = document.getElementById('aiHardBtn');
+const scoreXEl = document.getElementById('scoreX');
+const scoreOEl = document.getElementById('scoreO');
+const scoreDrawEl = document.getElementById('scoreDraw');
 
 let board = ["","","","","","","","",""];
 let currentPlayer = "X";
@@ -97,7 +163,16 @@ let gameOver = false;
 let vsAI = false;
 let aiDifficulty = 'hard';
 
-// Winning combinations
+let score = JSON.parse(localStorage.getItem('ticScore')) || {X:0, O:0, Draw:0};
+
+function updateScoreboard(){
+  scoreXEl.textContent = `X: ${score.X}`;
+  scoreOEl.textContent = `O: ${score.O}`;
+  scoreDrawEl.textContent = `Draw: ${score.Draw}`;
+}
+
+updateScoreboard();
+
 const winCombos = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 
 function startGame(ai=false,difficulty='hard'){
@@ -120,9 +195,10 @@ function startGame(ai=false,difficulty='hard'){
 }
 
 function handleClick(e){
+  if(gameOver) return;
   const index = e.target.dataset.index;
-  if(board[index] !== "" || gameOver) return;
-
+  if(board[index]!=="") return;
+  clickSound.play();
   board[index] = currentPlayer;
   e.target.textContent = currentPlayer;
 
@@ -130,27 +206,36 @@ function handleClick(e){
     highlightWinner(currentPlayer);
     statusEl.textContent = `${currentPlayer} Wins!`;
     gameOver = true;
+    score[currentPlayer]++;
+    localStorage.setItem('ticScore',JSON.stringify(score));
+    updateScoreboard();
+    winSound.play();
+    createConfetti();
+    drawConfetti();
     return;
   }
 
   if(board.every(cell => cell !== "")){
     statusEl.textContent = "Draw!";
     gameOver = true;
+    score.Draw++;
+    localStorage.setItem('ticScore',JSON.stringify(score));
+    updateScoreboard();
     return;
   }
 
-  if(vsAI && currentPlayer === "X"){
-    currentPlayer = "O";
-    statusEl.textContent = `Current Turn: ${currentPlayer}`;
-    setTimeout(aiMove, 400);
+  if(vsAI && currentPlayer==="X"){
+    currentPlayer="O";
+    statusEl.textContent=`Current Turn: ${currentPlayer}`;
+    setTimeout(aiMove,400);
   } else {
-    currentPlayer = currentPlayer === "X" ? "O" : "X";
-    statusEl.textContent = `Current Turn: ${currentPlayer}`;
+    currentPlayer = currentPlayer==="X"?"O":"X";
+    statusEl.textContent=`Current Turn: ${currentPlayer}`;
   }
 }
 
 function checkWin(player){
-  return winCombos.some(combo => combo.every(i => board[i]===player));
+  return winCombos.some(combo => combo.every(i=>board[i]===player));
 }
 
 function highlightWinner(player){
@@ -166,30 +251,40 @@ function aiMove(){
   let move;
   const emptyCells = board.map((v,i)=>v===""?i:null).filter(v=>v!==null);
 
-  if(aiDifficulty === 'easy'){
+  if(aiDifficulty==='easy'){
     move = emptyCells[Math.floor(Math.random()*emptyCells.length)];
-  } else if(aiDifficulty === 'medium'){
+  } else if(aiDifficulty==='medium'){
     move = getBestMove(board,2);
   } else {
     move = getBestMove(board,9);
   }
 
-  board[move] = "O";
-  boardEl.children[move].textContent = "O";
+  board[move]="O";
+  boardEl.children[move].textContent="O";
+  clickSound.play();
 
   if(checkWin("O")){
     highlightWinner("O");
-    statusEl.textContent = "O Wins!";
-    gameOver = true;
+    statusEl.textContent="O Wins!";
+    gameOver=true;
+    score.O++;
+    localStorage.setItem('ticScore',JSON.stringify(score));
+    updateScoreboard();
+    winSound.play();
+    createConfetti();
+    drawConfetti();
     return;
   }
-  if(board.every(cell => cell !== "")){
-    statusEl.textContent = "Draw!";
-    gameOver = true;
+  if(board.every(cell=>cell!=="")){
+    statusEl.textContent="Draw!";
+    gameOver=true;
+    score.Draw++;
+    localStorage.setItem('ticScore',JSON.stringify(score));
+    updateScoreboard();
     return;
   }
-  currentPlayer = "X";
-  statusEl.textContent = `Current Turn: ${currentPlayer}`;
+  currentPlayer="X";
+  statusEl.textContent=`Current Turn: ${currentPlayer}`;
 }
 
 // Minimax with depth limit
