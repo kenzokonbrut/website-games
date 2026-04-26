@@ -1,0 +1,75 @@
+<!DOCTYPE html><html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini Game</title>
+<style>
+body {
+  margin:0;
+  font-family: Arial;
+  text-align:center;
+  background:#111;
+  color:#fff;
+}
+#game {
+  position:relative;
+  width:100%;
+  height:400px;
+  background:#222;
+  overflow:hidden;
+}
+.box {
+  width:50px;
+  height:50px;
+  background:red;
+  position:absolute;
+  cursor:pointer;
+  border-radius:10px;
+}
+button {
+  margin:10px;
+  padding:10px 20px;
+  cursor:pointer;
+}
+</style>
+</head>
+<body>
+<h1>🎮 Catch The Box</h1>
+<p>Score: <span id="score">0</span></p>
+<button onclick="startGame()">Start Game</button><div id="game"></div><script>
+let score = 0;
+let gameInterval;
+
+function startGame() {
+  score = 0;
+  document.getElementById('score').innerText = score;
+  clearInterval(gameInterval);
+  gameInterval = setInterval(spawnBox, 800);
+}
+
+function spawnBox() {
+  const game = document.getElementById('game');
+
+  const box = document.createElement('div');
+  box.classList.add('box');
+
+  const x = Math.random() * (game.clientWidth - 50);
+  const y = Math.random() * (game.clientHeight - 50);
+
+  box.style.left = x + 'px';
+  box.style.top = y + 'px';
+
+  box.onclick = () => {
+    score++;
+    document.getElementById('score').innerText = score;
+    box.remove();
+  };
+
+  game.appendChild(box);
+
+  setTimeout(() => {
+    if (box.parentNode) box.remove();
+  }, 700);
+}
+</script></body>
+</html>
