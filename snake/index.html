@@ -10,7 +10,25 @@ body { margin:0; font-family:Arial; text-align:center; background:var(--bg); col
 header { display:flex; justify-content:space-between; padding:15px; background:var(--card);} 
 canvas { background:#000; margin-top:15px; border-radius:10px; }
 button { padding:8px 12px; border:none; border-radius:6px; cursor:pointer; margin:4px; }
-.controls { margin-top:10px; }
+.controls {
+  margin-top:15px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+}
+.controls .row {
+  display:flex;
+  gap:6px;
+}
+.controls button {
+  width:60px;
+  height:60px;
+  font-size:20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
 </style>
 </head>
 <body><header>
@@ -21,10 +39,16 @@ button { padding:8px 12px; border:none; border-radius:6px; cursor:pointer; margi
   </div>
 </header><h3>Score: <span id="score">0</span> | High: <span id="high">0</span></h3>
 <canvas id="game" width="300" height="300"></canvas><div class="controls">
-  <button onclick="setDir(0,-10)">⬆️</button><br>
-  <button onclick="setDir(-10,0)">⬅️</button>
-  <button onclick="setDir(10,0)">➡️</button><br>
-  <button onclick="setDir(0,10)">⬇️</button>
+  <div class="row">
+    <button onclick="setDir(0,-10)">⬆️</button>
+  </div>
+  <div class="row">
+    <button onclick="setDir(-10,0)">⬅️</button>
+    <button onclick="setDir(10,0)">➡️</button>
+  </div>
+  <div class="row">
+    <button onclick="setDir(0,10)">⬇️</button>
+  </div>
 </div><br>
 <button onclick="startGame()">Start / Restart</button><audio id="eatSound" src="https://assets.mixkit.co/sfx/preview/mixkit-bonus-earned-in-video-game-2058.mp3"></audio> <audio id="overSound" src="https://assets.mixkit.co/sfx/preview/mixkit-player-losing-or-failing-2042.mp3"></audio>
 
