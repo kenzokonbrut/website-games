@@ -2,13 +2,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tic Tac Toe Pro</title>
+<title>Tic Tac Toe Ultimate</title>
 <style>
 :root {
   --bg:#0f172a;
   --card:#1e293b;
   --text:#fff;
-  --accent:#38bdf8;
 }
 body.light {
   --bg:#f1f5f9;
@@ -33,29 +32,62 @@ button {
   border:none;
   cursor:pointer;
   border-radius:6px;
+  margin:5px;
 }
-.container { padding:20px; }.board { display:grid; grid-template-columns:repeat(3, 100px); gap:10px; justify-content:center; margin-top:20px; } .cell { width:100px; height:100px; background:var(--card); display:flex; align-items:center; justify-content:center; font-size:32px; cursor:pointer; border-radius:10px; transition:0.2s; } .cell:hover { transform:scale(1.1); } .win { background:#22c55e !important; color:#000; } .status { margin-top:15px; font-size:18px; } .score { margin-top:10px; } </style>
-
+.container { padding:20px; }
+.board {
+  display:grid;
+  grid-template-columns:repeat(3, 100px);
+  gap:10px;
+  justify-content:center;
+  margin-top:20px;
+}
+.cell {
+  width:100px;
+  height:100px;
+  background:var(--card);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:40px;
+  cursor:pointer;
+  border-radius:15px;
+  transition:0.2s;
+  font-weight:bold;
+}
+.cell:hover { transform:scale(1.1); }
+.cell.X {
+  color:#38bdf8;
+  text-shadow:0 0 10px rgba(56,189,248,0.7);
+}
+.cell.O {
+  color:#f43f5e;
+  text-shadow:0 0 10px rgba(244,63,94,0.7);
+}
+.win { 
+  background:#22c55e !important; 
+  color:#000 !important;
+  text-shadow:none;
+}
+.cell:hover { transform:scale(1.1); }
+.win { background:#22c55e !important; color:#000; }
+.status { margin-top:15px; }
+.mode-select { margin-top:20px; }
+</style>
 </head>
 <body><header>
-  <h2>❌⭕ Tic Tac Toe Pro</h2>
+  <h2>🎮 Tic Tac Toe</h2>
   <div>
     <button onclick="toggleTheme()">Theme</button>
     <button onclick="goHome()">Home</button>
   </div>
-</header><div class="container">
-  <div class="board" id="board"></div>
-  <div class="status" id="status">Giliran: X</div>
-  <div class="score">X: <span id="scoreX">0</span> | O: <span id="scoreO">0</span></div>
-  <br>
-  <button onclick="resetGame()">Reset Round</button>
-  <button onclick="resetScore()">Reset Score</button>
-</div><script>
+</header><div class="container" id="app"></div><audio id="clickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-game-click-1114.mp3"></audio> <audio id="winSound" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3"></audio>
+
+<script>
 let board = Array(9).fill("");
-let current = "X";
 let gameOver = false;
-let scoreX = 0;
-let scoreO = 0;
+let mode = null; // ai / friend
+let current = "X";
 
 function toggleTheme() {
   document.body.classList.toggle('light');
@@ -65,46 +97,93 @@ function goHome() {
   window.location.href = "/";
 }
 
-function render(winCombo = []) {
-  const el = document.getElementById("board");
-  el.innerHTML = "";
+function showMenu() {
+  app.innerHTML = `
+    <h3>Pilih Mode</h3>
+    <div class="mode-select">
+      <button onclick="startGame('ai')">🤖 Lawan AI</button>
+      <button onclick="startGame('friend')">👥 2 Player (1 HP)</button>
+    </div>
+  `;
+}
 
-  board.forEach((cell, i) => {
+function startGame(selectedMode) {
+  mode = selectedMode;
+  resetGame();
+}
+
+function render(winCombo=[]) {
+  app.innerHTML = `
+    <div class="board" id="board"></div>
+    <div class="status" id="status"></div>
+    <button onclick="showMenu()">Ganti Mode</button>
+  `;
+
+  const el = document.getElementById("board");
+
+  board.forEach((cell,i)=>{
     const div = document.createElement("div");
     div.className = "cell";
     if (winCombo.includes(i)) div.classList.add("win");
     div.innerText = cell;
-    div.onclick = () => move(i);
+    if (cell === 'X') div.classList.add('X');
+    if (cell === 'O') div.classList.add('O');
+    div.onclick = ()=>move(i);
     el.appendChild(div);
   });
+
+  updateStatus();
 }
 
 function move(i) {
   if (board[i] || gameOver) return;
 
+  playClick();
   board[i] = current;
 
-  const win = checkWin();
-  if (win) {
-    document.getElementById("status").innerText = current + " menang! 🎉";
-    if (current === "X") scoreX++;
-    else scoreO++;
-    updateScore();
-    gameOver = true;
-    render(win);
-    return;
+  if (checkEnd()) return;
+
+  if (mode === 'ai' && current === 'X') {
+    current = 'O';
+    setTimeout(aiMove, 400);
+  } else {
+    current = current === 'X' ? 'O' : 'X';
   }
 
-  if (board.every(x => x)) {
-    document.getElementById("status").innerText = "Seri 🤝";
-    gameOver = true;
-    render();
-    return;
-  }
-
-  current = current === "X" ? "O" : "X";
-  document.getElementById("status").innerText = "Giliran: " + current;
   render();
+}
+
+function aiMove() {
+  let empty = board.map((v,i)=>v==""?i:null).filter(v=>v!==null);
+  let move = empty[Math.floor(Math.random()*empty.length)];
+  board[move] = 'O';
+  playClick();
+
+  if (checkEnd()) return;
+
+  current = 'X';
+  render();
+}
+
+function checkEnd() {
+  let win = checkWin();
+  if (win) {
+    document.getElementById("status").innerText = win.player + " menang!";
+    playWin();
+    gameOver = true;
+    render(win.combo);
+    setTimeout(resetGame, 1500);
+    return true;
+  }
+
+  if (board.every(x=>x)) {
+    document.getElementById("status").innerText = "Seri";
+    gameOver = true;
+    setTimeout(resetGame, 1500);
+    return true;
+  }
+
+  return false;
 }
 
 function checkWin() {
@@ -113,32 +192,32 @@ function checkWin() {
     [0,3,6],[1,4,7],[2,5,8],
     [0,4,8],[2,4,6]
   ];
-
   for (let c of combos) {
-    if (c.every(i => board[i] === current)) return c;
+    if (c.every(i=>board[i]==='X')) return {player:'X', combo:c};
+    if (c.every(i=>board[i]==='O')) return {player:'O', combo:c};
   }
   return null;
 }
 
-function updateScore() {
-  document.getElementById("scoreX").innerText = scoreX;
-  document.getElementById("scoreO").innerText = scoreO;
+function updateStatus() {
+  const status = document.getElementById("status");
+  if (mode === 'ai') {
+    status.innerText = current === 'X' ? "Giliran Kamu (X)" : "Giliran AI (O)";
+  } else {
+    status.innerText = "Giliran: " + current;
+  }
 }
 
 function resetGame() {
   board = Array(9).fill("");
-  current = "X";
   gameOver = false;
-  document.getElementById("status").innerText = "Giliran: X";
+  current = 'X';
   render();
 }
 
-function resetScore() {
-  scoreX = 0;
-  scoreO = 0;
-  updateScore();
-}
+function playClick(){ document.getElementById("clickSound").play(); }
+function playWin(){ document.getElementById("winSound").play(); }
 
-render();
+showMenu();
 </script></body>
 </html>
