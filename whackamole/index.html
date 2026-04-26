@@ -2,112 +2,142 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Whack A Mole</title>
+<title>Whack A Mole Pro</title>
 <style>
-:root { --bg:#0f172a; --card:#1e293b; --text:#fff; }
+:root { --bg:#0f172a; --card:#1e293b; --text:#fff; --accent:#38bdf8; }
 body.light { --bg:#f1f5f9; --card:#fff; --text:#111; }
 body { margin:0; font-family:Arial; text-align:center; background:var(--bg); color:var(--text);} 
 header { display:flex; justify-content:space-between; padding:15px; background:var(--card);} 
 .container { padding:20px; }
 .grid {
-  display:grid;
-  grid-template-columns:repeat(3, 100px);
-  gap:10px;
-  justify-content:center;
+  display:grid; grid-template-columns:repeat(3, 90px); gap:10px; justify-content:center;
 }
 .hole {
-  width:100px; height:100px;
-  background:#000;
-  border-radius:10px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:30px;
-  cursor:pointer;
+  width:90px; height:90px; background:#000; border-radius:14px; display:flex;
+  align-items:center; justify-content:center; font-size:34px; cursor:pointer;
+  transition:transform .08s ease, box-shadow .1s ease;
 }
-.mole { color:#22c55e; }
-.bomb { color:#f43f5e; }
-button { padding:8px 12px; margin:5px; border:none; border-radius:6px; cursor:pointer; }
+.hole:active { transform:scale(.92); box-shadow:0 0 12px rgba(56,189,248,.5) inset; }
+.mole { filter: drop-shadow(0 0 8px rgba(34,197,94,.7)); }
+.bomb { filter: drop-shadow(0 0 8px rgba(244,63,94,.7)); }
+.topbar { margin-bottom:10px; }
+.badge { display:inline-block; padding:4px 8px; border-radius:8px; background:var(--card); margin:0 4px; }
+button { padding:8px 12px; margin:6px; border:none; border-radius:8px; cursor:pointer; }
 </style>
 </head>
 <body><header>
-  <h2>🎯 Whack A Mole</h2>
+  <h2>🎯 Whack A Mole Pro</h2>
   <div>
     <button onclick="toggleTheme()">Theme</button>
     <button onclick="goHome()">Home</button>
   </div>
 </header><div class="container">
-  <h3>Score: <span id="score">0</span> | Time: <span id="time">30</span></h3>
+  <div class="topbar">
+    <span class="badge">Score: <b id="score">0</b></span>
+    <span class="badge">High: <b id="high">0</b></span>
+    <span class="badge">Time: <b id="time">30</b>s</span>
+    <span class="badge">Lv: <b id="level">1</b></span>
+  </div>
   <div class="grid" id="grid"></div>
-  <br>
-  <button onclick="startGame()">Start</button>
-</div><script>
-let score=0, time=30, gameInterval, spawnInterval;
-let currentIndex = -1;
-let bombIndex = -1;
+  <div>
+    <button onclick="startGame()">Start / Restart</button>
+  </div>
+</div><audio id="hitSound" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.wav"></audio> <audio id="bombSound" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-changing-tab-206.wav"></audio> <audio id="endSound" src="https://assets.mixkit.co/sfx/preview/mixkit-player-losing-or-failing-2042.mp3"></audio>
+
+<script>
+let score=0, time=30, level=1;
+let gameTimer, spawnTimer;
+let currentIndex=-1, bombIndex=-1;
+let speed=700; // spawn interval
+let high = Number(localStorage.getItem('whackHigh')||0);
 
 function toggleTheme(){ document.body.classList.toggle('light'); }
 function goHome(){ window.location.href = "/"; }
 
 function startGame(){
-  score=0; time=30;
-  document.getElementById('score').innerText=score;
-  document.getElementById('time').innerText=time;
-
-  clearInterval(gameInterval);
-  clearInterval(spawnInterval);
-
+  score=0; time=30; level=1; speed=700;
+  setText();
+  clearInterval(gameTimer); clearInterval(spawnTimer);
   createGrid();
+  gameTimer = setInterval(tick, 1000);
+  spawnTimer = setInterval(spawn, speed);
+}
 
-  gameInterval = setInterval(()=>{
-    time--;
-    document.getElementById('time').innerText=time;
-    if(time<=0){
-      clearInterval(gameInterval);
-      clearInterval(spawnInterval);
-      alert('Game Over! Score: '+score);
-    }
-  },1000);
+function setText(){
+  scoreEl.textContent=score;
+  timeEl.textContent=time;
+  levelEl.textContent=level;
+  highEl.textContent=high;
+}
 
-  spawnInterval = setInterval(spawn,700);
+function tick(){
+  time--; timeEl.textContent=time;
+  if(time<=0){ endGame(); }
+}
+
+function endGame(){
+  clearInterval(gameTimer); clearInterval(spawnTimer);
+  document.getElementById('endSound').play();
+  if(score>high){ high=score; localStorage.setItem('whackHigh', high); }
+  setText();
+  alert('Waktu habis! Score: '+score);
 }
 
 function createGrid(){
   const grid = document.getElementById('grid');
-  grid.innerHTML="";
+  grid.innerHTML='';
   for(let i=0;i<9;i++){
-    const div = document.createElement('div');
+    const div=document.createElement('div');
     div.className='hole';
-    div.onclick = ()=>hit(i);
+    div.onclick=()=>hit(i);
     grid.appendChild(div);
   }
 }
 
 function spawn(){
   const holes = document.querySelectorAll('.hole');
-  holes.forEach(h=>h.innerText="");
+  holes.forEach(h=>{ h.textContent=''; h.classList.remove('mole','bomb'); });
 
   currentIndex = Math.floor(Math.random()*9);
-  bombIndex = Math.random()<0.3 ? Math.floor(Math.random()*9) : -1;
+  bombIndex = Math.random()<0.35 ? Math.floor(Math.random()*9) : -1;
+  if(bombIndex===currentIndex) bombIndex=-1;
 
-  if(bombIndex === currentIndex) bombIndex=-1;
+  const mole = holes[currentIndex];
+  mole.textContent='🐹'; mole.classList.add('mole');
 
-  holes[currentIndex].innerText="🐹";
-  holes[currentIndex].classList.add('mole');
-
-  if(bombIndex !== -1){
-    holes[bombIndex].innerText="💣";
-    holes[bombIndex].classList.add('bomb');
+  if(bombIndex!==-1){
+    const bomb = holes[bombIndex];
+    bomb.textContent='💣'; bomb.classList.add('bomb');
   }
 }
 
 function hit(i){
   if(i===currentIndex){
     score++;
+    document.getElementById('hitSound').play();
+    levelUp();
   } else if(i===bombIndex){
-    score--;
+    score = Math.max(0, score-1);
+    document.getElementById('bombSound').play();
   }
-  document.getElementById('score').innerText=score;
+  setText();
 }
+
+function levelUp(){
+  if(score>0 && score%5===0){
+    level++;
+    speed = Math.max(250, speed-60);
+    clearInterval(spawnTimer);
+    spawnTimer = setInterval(spawn, speed);
+  }
+}
+
+// cache elements
+const scoreEl = document.getElementById('score');
+const timeEl = document.getElementById('time');
+const levelEl = document.getElementById('level');
+const highEl = document.getElementById('high');
+
+createGrid(); setText();
 </script></body>
 </html>
