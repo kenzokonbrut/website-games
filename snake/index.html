@@ -2,101 +2,89 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Snake Game</title>
+<title>Snake Pro</title>
 <style>
-:root {
-  --bg:#0f172a;
-  --card:#1e293b;
-  --text:#fff;
-}
-body.light {
-  --bg:#f1f5f9;
-  --card:#fff;
-  --text:#111;
-}
-body {
-  margin:0;
-  font-family:Arial;
-  text-align:center;
-  background:var(--bg);
-  color:var(--text);
-}
-header {
-  display:flex;
-  justify-content:space-between;
-  padding:15px;
-  background:var(--card);
-}
-canvas {
-  background:#000;
-  margin-top:20px;
-  border-radius:10px;
-}
-button {
-  padding:8px 12px;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
-}
+:root { --bg:#0f172a; --card:#1e293b; --text:#fff; }
+body.light { --bg:#f1f5f9; --card:#fff; --text:#111; }
+body { margin:0; font-family:Arial; text-align:center; background:var(--bg); color:var(--text);} 
+header { display:flex; justify-content:space-between; padding:15px; background:var(--card);} 
+canvas { background:#000; margin-top:15px; border-radius:10px; }
+button { padding:8px 12px; border:none; border-radius:6px; cursor:pointer; margin:4px; }
+.controls { margin-top:10px; }
 </style>
 </head>
 <body><header>
-  <h2>🐍 Snake Game</h2>
+  <h2>🐍 Snake Pro</h2>
   <div>
     <button onclick="toggleTheme()">Theme</button>
     <button onclick="goHome()">Home</button>
   </div>
-</header><h3>Score: <span id="score">0</span></h3>
-<canvas id="game" width="300" height="300"></canvas>
-<br>
-<button onclick="startGame()">Start / Restart</button><script>
+</header><h3>Score: <span id="score">0</span> | High: <span id="high">0</span></h3>
+<canvas id="game" width="300" height="300"></canvas><div class="controls">
+  <button onclick="setDir(0,-10)">⬆️</button><br>
+  <button onclick="setDir(-10,0)">⬅️</button>
+  <button onclick="setDir(10,0)">➡️</button><br>
+  <button onclick="setDir(0,10)">⬇️</button>
+</div><br>
+<button onclick="startGame()">Start / Restart</button><audio id="eatSound" src="https://assets.mixkit.co/sfx/preview/mixkit-bonus-earned-in-video-game-2058.mp3"></audio> <audio id="overSound" src="https://assets.mixkit.co/sfx/preview/mixkit-player-losing-or-failing-2042.mp3"></audio>
+
+<script>
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
-let snake, food, dir, score, game;
+let snake, food, dir, score, game, speed;
+let high = localStorage.getItem('snakeHigh') || 0;
+document.getElementById('high').innerText = high;
 
-function toggleTheme() {
-  document.body.classList.toggle('light');
-}
+function toggleTheme(){ document.body.classList.toggle('light'); }
+function goHome(){ window.location.href = "/"; }
 
-function goHome() {
-  window.location.href = "/";
-}
-
-function startGame() {
+function startGame(){
   snake = [{x:150,y:150}];
   dir = {x:10,y:0};
   food = spawnFood();
   score = 0;
+  speed = 120;
   document.getElementById('score').innerText = score;
   clearInterval(game);
-  game = setInterval(loop, 120);
+  game = setInterval(loop, speed);
 }
 
-function spawnFood() {
+function spawnFood(){
   return {
     x: Math.floor(Math.random()*30)*10,
     y: Math.floor(Math.random()*30)*10
   };
 }
 
-function loop() {
+function loop(){
   const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
 
-  // collision
-  if (head.x<0||head.y<0||head.x>=300||head.y>=300||
-      snake.some(s=>s.x===head.x&&s.y===head.y)) {
+  if(head.x<0||head.y<0||head.x>=300||head.y>=300||
+     snake.some(s=>s.x===head.x&&s.y===head.y)){
     clearInterval(game);
+    document.getElementById('overSound').play();
+    if(score>high){
+      high = score;
+      localStorage.setItem('snakeHigh', high);
+      document.getElementById('high').innerText = high;
+    }
     alert('Game Over! Score: '+score);
     return;
   }
 
   snake.unshift(head);
 
-  if (head.x===food.x && head.y===food.y) {
+  if(head.x===food.x && head.y===food.y){
     score++;
     document.getElementById('score').innerText = score;
+    document.getElementById('eatSound').play();
     food = spawnFood();
+
+    // speed up
+    clearInterval(game);
+    speed = Math.max(60, speed - 5);
+    game = setInterval(loop, speed);
   } else {
     snake.pop();
   }
@@ -104,9 +92,16 @@ function loop() {
   draw();
 }
 
-function draw() {
+function draw(){
   ctx.fillStyle = '#000';
   ctx.fillRect(0,0,300,300);
+
+  // grid
+  ctx.strokeStyle = '#111';
+  for(let i=0;i<300;i+=10){
+    ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,300); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(300,i); ctx.stroke();
+  }
 
   // snake
   ctx.fillStyle = '#22c55e';
@@ -117,34 +112,17 @@ function draw() {
   ctx.fillRect(food.x,food.y,10,10);
 }
 
+function setDir(x,y){
+  if(x!==0 && dir.x===0) dir={x,y};
+  if(y!==0 && dir.y===0) dir={x,y};
+}
+
+// keyboard support
 window.addEventListener('keydown', e=>{
-  if (e.key==='ArrowUp' && dir.y===0) dir={x:0,y:-10};
-  if (e.key==='ArrowDown' && dir.y===0) dir={x:0,y:10};
-  if (e.key==='ArrowLeft' && dir.x===0) dir={x:-10,y:0};
-  if (e.key==='ArrowRight' && dir.x===0) dir={x:10,y:0};
-});
-// TOUCH CONTROL (HP)
-let touchStartX = 0;
-let touchStartY = 0;
-
-canvas.addEventListener("touchstart", e => {
-  const touch = e.touches[0];
-  touchStartX = touch.clientX;
-  touchStartY = touch.clientY;
-});
-
-canvas.addEventListener("touchmove", e => {
-  const touch = e.touches[0];
-  let dx = touch.clientX - touchStartX;
-  let dy = touch.clientY - touchStartY;
-
-  if (Math.abs(dx) > Math.abs(dy)) {
-    if (dx > 0 && dir.x === 0) dir = {x:10,y:0};
-    else if (dx < 0 && dir.x === 0) dir = {x:-10,y:0};
-  } else {
-    if (dy > 0 && dir.y === 0) dir = {x:0,y:10};
-    else if (dy < 0 && dir.y === 0) dir = {x:0,y:-10};
-  }
+  if(e.key==='ArrowUp') setDir(0,-10);
+  if(e.key==='ArrowDown') setDir(0,10);
+  if(e.key==='ArrowLeft') setDir(-10,0);
+  if(e.key==='ArrowRight') setDir(10,0);
 });
 
 </script></body>
