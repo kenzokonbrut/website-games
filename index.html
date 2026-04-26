@@ -1,0 +1,95 @@
+<!DOCTYPE html><html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kenzoverse Games</title>
+<style>
+:root {
+  --bg:#0f172a;
+  --card:#1e293b;
+  --text:#fff;
+  --accent:#38bdf8;
+}
+body.light {
+  --bg:#f1f5f9;
+  --card:#fff;
+  --text:#111;
+}
+body {
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+header {
+  display:flex;
+  justify-content:space-between;
+  padding:15px 20px;
+  background:var(--card);
+}
+h1 {margin:0; font-size:20px;}
+button {
+  padding:8px 12px;
+  border:none;
+  cursor:pointer;
+  border-radius:6px;
+}
+.container {
+  padding:20px;
+}
+.grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(150px,1fr));
+  gap:15px;
+}
+.card {
+  background:var(--card);
+  padding:20px;
+  border-radius:12px;
+  text-align:center;
+  cursor:pointer;
+  transition:0.2s;
+}
+.card:hover {
+  transform:scale(1.05);
+}
+.card h3 {
+  margin:10px 0 0;
+}
+</style>
+</head>
+<body><header>
+  <h1>🎮 Kenzoverse Games</h1>
+  <button onclick="toggleTheme()">Toggle Theme</button>
+</header><div class="container">
+  <h2>Pilih Game</h2>
+  <div class="grid"><div class="card" onclick="goGame('tictactoe')">
+  🎯
+  <h3>Tic Tac Toe</h3>
+</div>
+
+<div class="card" onclick="goGame('snake')">
+  🐍
+  <h3>Snake</h3>
+</div>
+
+<div class="card" onclick="goGame('comingsoon')">
+  ❓
+  <h3>Coming Soon</h3>
+</div>
+
+  </div>
+</div><script>
+function toggleTheme() {
+  document.body.classList.toggle('light');
+}
+
+function goGame(game) {
+  // nanti kalau sudah deploy domain asli
+  // window.location.href = `/` + game
+
+  // sementara demo lokal
+  alert('Akan menuju: ' + game);
+}
+</script></body>
+</html>
