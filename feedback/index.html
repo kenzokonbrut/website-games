@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feedback</title>
+<style>
+body {
+  margin:0;
+  font-family:Arial;
+  background:#0f172a;
+  color:white;
+  text-align:center;
+}
+.container {
+  padding:30px;
+}
+.card {
+  background:#1e293b;
+  padding:20px;
+  margin:10px auto;
+  border-radius:12px;
+  width:90%;
+  max-width:300px;
+  cursor:pointer;
+}
+.card:hover {
+  transform:scale(1.05);
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>💬 Feedback & Request</h2>
+
+  <div class="card" onclick="sendWA('Halo, saya mau request game: ')">
+    🎮 Request Game
+  </div>
+
+  <div class="card" onclick="sendWA('Halo, saya menemukan bug: ')">
+    🐞 Lapor Bug
+  </div>
+
+  <div class="card" onclick="sendWA('Halo, saya punya saran: ')">
+    💡 Saran
+  </div>
+
+  <br>
+  <button onclick="goHome()">⬅️ Kembali</button>
+</div>
+
+<script>
+function sendWA(text) {
+  const nomor = '62XXXXXXXXXX'; // ganti nomor kamu
+  window.open(`https://wa.me/${nomor}?text=${encodeURIComponent(text)}`);
+}
+
+function goHome() {
+  window.location.href = "/";
+}
+</script>
+
+</body>
+</html>
