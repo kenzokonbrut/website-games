@@ -123,5 +123,29 @@ window.addEventListener('keydown', e=>{
   if (e.key==='ArrowLeft' && dir.x===0) dir={x:-10,y:0};
   if (e.key==='ArrowRight' && dir.x===0) dir={x:10,y:0};
 });
+// TOUCH CONTROL (HP)
+let touchStartX = 0;
+let touchStartY = 0;
+
+canvas.addEventListener("touchstart", e => {
+  const touch = e.touches[0];
+  touchStartX = touch.clientX;
+  touchStartY = touch.clientY;
+});
+
+canvas.addEventListener("touchmove", e => {
+  const touch = e.touches[0];
+  let dx = touch.clientX - touchStartX;
+  let dy = touch.clientY - touchStartY;
+
+  if (Math.abs(dx) > Math.abs(dy)) {
+    if (dx > 0 && dir.x === 0) dir = {x:10,y:0};
+    else if (dx < 0 && dir.x === 0) dir = {x:-10,y:0};
+  } else {
+    if (dy > 0 && dir.y === 0) dir = {x:0,y:10};
+    else if (dy < 0 && dir.y === 0) dir = {x:0,y:-10};
+  }
+});
+
 </script></body>
 </html>
